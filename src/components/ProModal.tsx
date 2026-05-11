@@ -63,8 +63,8 @@ export default function ProModal({ open, reason, onClose }: ProModalProps) {
                 <>
                   <p className="text-[#111110] text-lg font-semibold mb-2">로그인이 필요합니다</p>
                   <p className="text-[#78776c] text-sm leading-relaxed mb-6">
-                    로그인하면 30크레딧이 지급돼요.<br />
-                    1회 분석에 10크레딧이 사용되며, 무료로 3번 분석할 수 있어요.
+                    로그인하면 10크레딧이 지급돼요.<br />
+                    1회 분석에 10크레딧이 사용돼요.
                   </p>
                   <a
                     href="/login"

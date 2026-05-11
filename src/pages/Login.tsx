@@ -46,13 +46,13 @@ export default function Login() {
             로그인
           </h1>
           <p className="text-[#78776c] text-sm leading-relaxed mb-8">
-            가입 시 무료 30크레딧이 지급되고<br />분석 기록을 저장할 수 있어요.
+            가입 시 무료 10크레딧이 지급되고<br />분석 기록을 저장할 수 있어요.
           </p>
 
           {/* 크레딧 툴팁 */}
           <div className="flex justify-center mb-3">
             <span className="inline-flex items-center gap-1.5 bg-[#f0fdf4] text-[#16a34a] text-xs font-medium px-3 py-1.5 rounded-full border border-[#bbf7d0]">
-              ✦ 최초 가입 시 30크레딧 지급!
+              ✦ 최초 가입 시 10크레딧 지급!
             </span>
           </div>
 
