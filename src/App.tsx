@@ -7,6 +7,7 @@ import Login from '@/pages/Login'
 import MyPage from '@/pages/MyPage'
 import PaymentSuccess from '@/pages/PaymentSuccess'
 import PaymentFail from '@/pages/PaymentFail'
+import ChargePage from '@/pages/ChargePage'
 import { Toaster } from '@/components/ui/sonner'
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/report"  element={<Report />} />
           <Route path="/login"   element={<Login />} />
           <Route path="/mypage"          element={<MyPage />} />
+          <Route path="/payment/charge"   element={<ChargePage />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/fail"    element={<PaymentFail />} />
         </Routes>
