@@ -7,7 +7,7 @@ import SiteNav from '@/components/SiteNav'
 import ProModal from '@/components/ProModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { track } from '@/lib/mixpanel'
+import { Analytics } from '@/lib/analytics'
 
 // ─── Animation ───────────────────────────────────────────────────────────────
 
@@ -206,6 +206,7 @@ export default function Analyze() {
     if (f.type !== 'application/pdf') { setFileError('PDF 파일만 지원합니다.'); return }
     if (f.size > MAX_BYTES) { setFileError(`파일 크기는 ${MAX_MB}MB 이하여야 합니다.`); return }
     setPdfFile(f)
+    Analytics.pdfUploaded({ fileSize: f.size })
   }
 
   const canSubmit = pdfFile !== null && jdText.trim().length >= 50
@@ -234,7 +235,8 @@ export default function Analyze() {
     }
 
     setIsAnalyzing(true)
-    track('Analysis Started', { jd_length: jdText.length, pdf_size: pdfFile!.size })
+    Analytics.jdInputted({ length: jdText.length })
+    Analytics.analysisStarted({ jdLength: jdText.length, pdfSize: pdfFile!.size })
 
     // 크레딧 선차감 (RPC — atomic)
     const { error: deductError } = await supabase.rpc('deduct_credits', { amount: 10 })
@@ -269,7 +271,7 @@ export default function Analyze() {
       const data = await res.json()
 
       if (!res.ok) throw new Error(data.error ?? '분석에 실패했습니다.')
-      track('Analysis Completed', { overall_score: data.result?.overall_score, fit_verdict: data.result?.fit_verdict })
+      Analytics.analysisCompleted({ score: data.result?.overall_score, verdict: data.result?.fit_verdict })
 
       // Supabase에 결과 저장
       const { data: saved, error: saveError } = await supabase
@@ -289,7 +291,9 @@ export default function Analyze() {
       await supabase.rpc('refund_credits', { amount: 10 })
       await refetchCredits()
       await supabase.storage.from('portfolios').remove([storagePath])
-      setAnalyzeError(err instanceof Error ? err.message : '분석에 실패했습니다. 다시 시도해주세요.')
+      const errMsg = err instanceof Error ? err.message : '분석에 실패했습니다. 다시 시도해주세요.'
+      Analytics.analysisFailed({ error: errMsg })
+      setAnalyzeError(errMsg)
       setIsAnalyzing(false)
     }
   }

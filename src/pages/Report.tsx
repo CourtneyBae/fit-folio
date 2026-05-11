@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { Analytics } from '@/lib/analytics'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, AlertCircle, ArrowRight, ChevronDown, Link2, FileDown } from 'lucide-react'
 import { toast } from 'sonner'
@@ -120,6 +121,7 @@ function ReportNav() {
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
     toast.success('링크가 복사됐습니다')
+    Analytics.resultCopied()
   }
 
   const savePdf = () => {
@@ -277,7 +279,7 @@ function JdSkillsSection({ result }: { result: AnalysisResult }) {
       variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}
       className="border-t border-[#e4e4e0] pt-14 mb-14"
     >
-      <motion.h2 variants={staggerItem} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
+      <motion.h2 variants={staggerItem} onViewportEnter={() => Analytics.resultSectionViewed('JD 요구 역량')} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
         JD 요구 역량
       </motion.h2>
 
@@ -347,7 +349,7 @@ function PersonaReviewSection({ result }: { result: AnalysisResult }) {
   return (
     <div className="border-t border-[#e4e4e0] pt-16 mb-16">
       <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}>
-        <motion.h2 variants={staggerItem} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
+        <motion.h2 variants={staggerItem} onViewportEnter={() => Analytics.resultSectionViewed('페르소나 리뷰')} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
           세 시선으로 본 포트폴리오
         </motion.h2>
 
@@ -433,7 +435,7 @@ function ProjectMatchesSection({ result }: { result: AnalysisResult }) {
   return (
     <div className="border-t border-[#e4e4e0] pt-14 mb-14">
       <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}>
-        <motion.h2 variants={staggerItem} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
+        <motion.h2 variants={staggerItem} onViewportEnter={() => Analytics.resultSectionViewed('프로젝트별 JD 매치')} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
           프로젝트별 JD 매치
         </motion.h2>
 
@@ -553,7 +555,7 @@ function SkillAnalysisSection({ result }: { result: AnalysisResult }) {
   return (
     <div className="border-t border-[#e4e4e0] pt-14 mb-14">
       <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}>
-        <motion.h2 variants={staggerItem} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
+        <motion.h2 variants={staggerItem} onViewportEnter={() => Analytics.resultSectionViewed('역량 분석')} className="text-[#111110] text-2xl font-semibold tracking-tight mb-6">
           역량 분석
         </motion.h2>
       </motion.div>
@@ -578,7 +580,7 @@ function StrengthsSection({ result }: { result: AnalysisResult }) {
   return (
     <div className="border-t border-[#e4e4e0] pt-14 mb-14">
       <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}>
-        <motion.h2 variants={staggerItem} className="text-[#111110] text-2xl font-semibold tracking-tight mb-2">
+        <motion.h2 variants={staggerItem} onViewportEnter={() => Analytics.resultSectionViewed('이미 갖춘 강점')} className="text-[#111110] text-2xl font-semibold tracking-tight mb-2">
           이미 갖춘 강점
         </motion.h2>
         <motion.p variants={staggerItem} className="text-[#78776c] text-sm leading-relaxed mb-8">
@@ -618,7 +620,7 @@ function RecommendationsSection({ result }: { result: AnalysisResult }) {
   return (
     <div className="border-t border-[#e4e4e0] pt-16 mb-16">
       <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}>
-        <motion.h2 variants={staggerItem} className="text-[#111110] text-2xl font-semibold tracking-tight mb-2">
+        <motion.h2 variants={staggerItem} onViewportEnter={() => Analytics.resultSectionViewed('수정 액션')} className="text-[#111110] text-2xl font-semibold tracking-tight mb-2">
           수정 액션
         </motion.h2>
         <motion.p variants={staggerItem} className="text-[#78776c] text-sm leading-relaxed mb-8">
