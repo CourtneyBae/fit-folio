@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { track } from '@/lib/mixpanel'
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams()
@@ -26,7 +27,7 @@ export default function PaymentSuccess() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.ok) { refetchCredits(); setStatus('done') }
+        if (data.ok) { refetchCredits(); track('Credits Charged', { amount: 10000, credits: 100 }); setStatus('done') }
         else setStatus('error')
       })
       .catch(() => setStatus('error'))

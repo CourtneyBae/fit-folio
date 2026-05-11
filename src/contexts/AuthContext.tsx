@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { identify, reset } from '@/lib/mixpanel'
 
 export interface AuthUser {
   id: string
@@ -58,13 +59,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        setUser(toAuthUser(session.user))
+        const authUser = toAuthUser(session.user)
+        setUser(authUser)
         fetchCredits(session.user.id)
+        if (event === 'SIGNED_IN') {
+          identify(authUser.id, { name: authUser.name, email: authUser.email })
+        }
       } else {
         setUser(null)
         setCredits(0)
+        if (event === 'SIGNED_OUT') reset()
       }
       setLoading(false)
     })

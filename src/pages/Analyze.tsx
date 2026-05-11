@@ -7,6 +7,7 @@ import SiteNav from '@/components/SiteNav'
 import ProModal from '@/components/ProModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { track } from '@/lib/mixpanel'
 
 // ─── Animation ───────────────────────────────────────────────────────────────
 
@@ -233,6 +234,7 @@ export default function Analyze() {
     }
 
     setIsAnalyzing(true)
+    track('Analysis Started', { jd_length: jdText.length, pdf_size: pdfFile!.size })
 
     // 크레딧 선차감 (RPC — atomic)
     const { error: deductError } = await supabase.rpc('deduct_credits', { amount: 10 })
@@ -267,6 +269,7 @@ export default function Analyze() {
       const data = await res.json()
 
       if (!res.ok) throw new Error(data.error ?? '분석에 실패했습니다.')
+      track('Analysis Completed', { overall_score: data.result?.overall_score, fit_verdict: data.result?.fit_verdict })
 
       // Supabase에 결과 저장
       const { data: saved, error: saveError } = await supabase
