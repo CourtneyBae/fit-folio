@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /Users/baesehui/Desktop/fit-folio/src/components/ui /Users/baesehui/Desktop/fit-folio/src/lib)",
+      "Bash(mv \"/Users/baesehui/Desktop/fit-folio/@/lib/utils.ts\" /Users/baesehui/Desktop/fit-folio/src/lib/utils.ts)",
+      "Bash(mv \"/Users/baesehui/Desktop/fit-folio/@/components/ui/button.tsx\" /Users/baesehui/Desktop/fit-folio/src/components/ui/button.tsx)",
+      "Bash(rm -rf \"/Users/baesehui/Desktop/fit-folio/@\")",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest add dropdown-menu sonner)",
+      "Bash(sed -i '' '807s/max-w-6xl/max-w-4xl/' /Users/baesehui/Desktop/fit-folio/src/pages/Report.tsx)",
+      "Bash(sed -i '' '866s/max-w-6xl/max-w-4xl/' /Users/baesehui/Desktop/fit-folio/src/pages/Report.tsx)",
+      "Bash(npm uninstall *)",
+      "Bash(npx tsc *)",
+      "Bash(node *)",
+      "Bash(pkill -f \"tsx watch server/index.ts\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/analyses -F jdText=test)",
+      "Bash(curl *)",
+      "Read(//tmp/**)"
+    ]
+  }
+}
