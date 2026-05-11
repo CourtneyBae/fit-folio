@@ -112,7 +112,7 @@ function Hero() {
               무료로 분석 시작
               <ArrowRight size={15} />
             </a>
-            <span className="text-[#a8a89e] text-sm">가입 없이 바로 시작 · 첫 3회 무료</span>
+            <span className="text-[#a8a89e] text-sm">가입하면 1회 무료 분석</span>
           </motion.div>
         </motion.div>
       </div>
@@ -391,7 +391,7 @@ function Testimonials() {
 
 // ─── Pricing ─────────────────────────────────────────────────────────────────
 
-const freeFeatures = ['3회 분석 무료', '역량 비교 분석', '프로젝트별 피드백', '수정 액션 제안']
+const freeFeatures = ['1회 분석 무료', '역량 비교 분석', '프로젝트별 피드백', '수정 액션 제안']
 const proFeatures = ['무제한 분석', '상세 리포트 전체 제공', 'PDF 다운로드', '여러 JD 비교', 'AI 문장 개선 제안']
 
 function Pricing() {
@@ -414,7 +414,7 @@ function Pricing() {
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
           className="text-[#78776c] text-base leading-relaxed mb-16 max-w-sm"
         >
-          가입 없이 3회까지 무료로 분석할 수 있습니다.
+          가입 시 1회 무료 분석이 제공됩니다.
         </motion.p>
 
         <motion.div
@@ -426,7 +426,7 @@ function Pricing() {
             <div className="flex items-baseline gap-1 mb-1">
               <span className="text-[#111110] text-4xl font-bold">₩0</span>
             </div>
-            <p className="text-[#78776c] text-sm mb-8">3회 분석 · 가입 불필요</p>
+            <p className="text-[#78776c] text-sm mb-8">1회 무료 분석</p>
             <ul className="space-y-3 mb-8">
               {freeFeatures.map((f) => (
                 <li key={f} className="flex items-center gap-2.5">
@@ -493,7 +493,7 @@ function CTA() {
           지금 첫 분석을<br />시작해보세요
         </motion.h2>
         <motion.p variants={staggerItem} className="text-[#a8a89e] text-base mb-12">
-          무료로 3회 분석 가능 · 가입 없이 바로 시작
+          가입 시 1회 무료 분석 제공
         </motion.p>
         <motion.div variants={staggerItem}>
           <a
