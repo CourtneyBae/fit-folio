@@ -3,8 +3,7 @@
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/analyses.ts": {
-      "maxDuration": 60
-    }
+    "api/analyses.ts": { "maxDuration": 60 },
+    "api/payment/confirm.ts": { "maxDuration": 30 }
   }
 }

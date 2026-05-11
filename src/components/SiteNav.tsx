@@ -61,9 +61,14 @@ export default function SiteNav({ scrolled }: SiteNavProps) {
                       <div className="px-4 py-2.5 border-b border-[#e4e4e0]">
                         <p className="text-[#111110] text-sm font-medium truncate">{user.name}</p>
                         <p className="text-[#78776c] text-xs truncate">{user.email}</p>
-                        <p className={cn('text-xs mt-1 font-medium', credits <= 10 ? 'text-[#dc2626]' : 'text-[#78776c]')}>
-                          ✦ {credits}크레딧
-                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className={cn('text-xs font-medium', credits <= 10 ? 'text-[#dc2626]' : 'text-[#78776c]')}>
+                            ✦ {credits}크레딧
+                          </p>
+                          <a href="/payment/charge" onClick={() => setMenuOpen(false)} className="text-[10px] text-[#78776c] hover:text-[#111110] underline underline-offset-2 transition-colors">
+                            충전
+                          </a>
+                        </div>
                       </div>
                       <a
                         href="/mypage"

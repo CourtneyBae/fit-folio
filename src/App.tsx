@@ -5,6 +5,8 @@ import Analyze from '@/pages/Analyze'
 import Report from '@/pages/Report'
 import Login from '@/pages/Login'
 import MyPage from '@/pages/MyPage'
+import PaymentSuccess from '@/pages/PaymentSuccess'
+import PaymentFail from '@/pages/PaymentFail'
 import { Toaster } from '@/components/ui/sonner'
 
 export default function App() {
@@ -16,7 +18,9 @@ export default function App() {
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/report"  element={<Report />} />
           <Route path="/login"   element={<Login />} />
-          <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage"          element={<MyPage />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/fail"    element={<PaymentFail />} />
         </Routes>
         <Toaster position="bottom-center" />
       </AuthProvider>

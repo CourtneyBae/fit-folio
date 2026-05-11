@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ArrowRight } from 'lucide-react'
+import { loadTossPayments } from '@tosspayments/tosspayments-sdk'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface ProModalProps {
   open: boolean
@@ -8,6 +10,23 @@ interface ProModalProps {
 }
 
 export default function ProModal({ open, reason, onClose }: ProModalProps) {
+  const { user } = useAuth()
+
+  const handleCharge = async () => {
+    if (!user) return
+    const tossPayments = await loadTossPayments(import.meta.env.VITE_TOSS_CLIENT_KEY as string)
+    const payment = tossPayments.payment({ customerKey: user.id })
+    await payment.requestPayment({
+      method: 'CARD',
+      amount: { currency: 'KRW', value: 10000 },
+      orderId: `credit_${user.id}_${Date.now()}`,
+      orderName: 'FitFolio 크레딧 100개',
+      customerName: user.name,
+      customerEmail: user.email,
+      successUrl: `${window.location.origin}/payment/success`,
+      failUrl: `${window.location.origin}/payment/fail`,
+    })
+  }
   return (
     <AnimatePresence>
       {open && (
@@ -58,18 +77,24 @@ export default function ProModal({ open, reason, onClose }: ProModalProps) {
               ) : (
                 <>
                   <p className="text-[#111110] text-lg font-semibold mb-2">크레딧이 부족해요</p>
-                  <p className="text-[#78776c] text-sm leading-relaxed mb-2">
-                    Pro로 업그레이드하면 무제한으로 분석할 수 있어요.
+                  <p className="text-[#78776c] text-sm leading-relaxed mb-6">
+                    크레딧을 충전하면 계속 분석할 수 있어요.
                   </p>
-                  <ul className="text-[#78776c] text-sm space-y-1 mb-6 pl-4 list-disc">
-                    <li>무제한 JD 분석</li>
-                    <li>상세 리포트 전체 제공</li>
-                    <li>PDF 다운로드</li>
-                  </ul>
+                  <div className="bg-[#f8f8f6] rounded-xl p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[#111110] text-sm font-semibold">크레딧 100개</p>
+                        <p className="text-[#78776c] text-xs mt-0.5">분석 10회 가능</p>
+                      </div>
+                      <p className="text-[#111110] text-base font-bold">₩10,000</p>
+                    </div>
+                  </div>
                   <button
+                    onClick={handleCharge}
                     className="flex items-center justify-center gap-2 w-full bg-[#111110] text-[#f4f4f0] rounded-full py-3 text-sm font-medium hover:bg-[#2a2a28] transition-colors mb-3"
                   >
-                    Pro 업그레이드 (출시 예정)
+                    카드로 충전하기
+                    <ArrowRight size={14} />
                   </button>
                   <button
                     onClick={onClose}

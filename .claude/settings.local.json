@@ -17,7 +17,12 @@
       "Bash(pkill -f \"tsx watch server/index.ts\")",
       "Bash(curl -s -X POST http://localhost:3001/api/analyses -F jdText=test)",
       "Bash(curl *)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(gh auth *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
