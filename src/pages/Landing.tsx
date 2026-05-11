@@ -88,7 +88,7 @@ function Hero() {
             className="text-[#f4f4f0] font-bold leading-[1.15] tracking-tight mb-7"
             style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)' }}
           >
-            지원 직전,<br />
+            지원 전,<br />
             포트폴리오가<br />
             이 JD에 맞는지<br />
             알아보세요
