@@ -711,13 +711,13 @@ function ProUpgradeSection() {
 
           {/* 오버레이 + CTA */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <a
-              href="/analyze"
+            <button
+              onClick={() => toast.info('업데이트 예정입니다', { description: '곧 Pro 플랜과 함께 출시될 예정이에요.' })}
               className="inline-flex items-center gap-2 bg-[#111110] text-[#f4f4f0] rounded-full px-6 py-3 text-sm font-medium hover:bg-[#2a2a28] transition-colors shadow-lg"
             >
               Pro에서 확인하기
               <ArrowRight size={15} />
-            </a>
+            </button>
           </div>
         </motion.div>
       </motion.div>
