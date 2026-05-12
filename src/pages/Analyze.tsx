@@ -215,37 +215,16 @@ export default function Analyze() {
     if (!canSubmit || isAnalyzing) return
     setAnalyzeError(null)
 
-    // 비로그인 → 로그인 유도
-    if (!user) {
-      setProModal('guest_limit')
-      return
-    }
+    if (!user) { setProModal('guest_limit'); return }
 
-    // DB에서 최신 크레딧 조회 (stale state 방지)
+    // UX 크레딧 확인 (서버에서도 검증)
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('id', user.id)
-      .single()
-    const currentCredits = profile?.credits ?? 0
-
-    if (currentCredits < 10) {
-      setProModal('user_limit')
-      return
-    }
+      .from('profiles').select('credits').eq('id', user.id).single()
+    if ((profile?.credits ?? 0) < 10) { setProModal('user_limit'); return }
 
     setIsAnalyzing(true)
     Analytics.jdInputted({ length: jdText.length })
     Analytics.analysisStarted({ jdLength: jdText.length, pdfSize: pdfFile!.size })
-
-    // 크레딧 선차감 (RPC — atomic)
-    const { error: deductError } = await supabase.rpc('deduct_credits', { amount: 10 })
-    if (deductError) {
-      setAnalyzeError('크레딧 차감에 실패했습니다. 다시 시도해주세요.')
-      setIsAnalyzing(false)
-      return
-    }
-    await refetchCredits()
 
     // PDF → Supabase Storage 업로드
     const storagePath = `${user.id}/${Date.now()}.pdf`
@@ -254,43 +233,32 @@ export default function Analyze() {
       .upload(storagePath, pdfFile!, { contentType: 'application/pdf' })
 
     if (uploadError) {
-      await supabase.rpc('refund_credits', { amount: 10 })
-      await refetchCredits()
       setAnalyzeError('PDF 업로드에 실패했습니다. 다시 시도해주세요.')
       setIsAnalyzing(false)
       return
     }
 
-    // 분석 API 호출
+    // 분석 레코드 생성 (서버에서 크레딧 차감)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/analyses', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({ storagePath, jdText }),
       })
       const data = await res.json()
 
-      if (!res.ok) throw new Error(data.error ?? '분석에 실패했습니다.')
-      Analytics.analysisCompleted({ score: data.result?.overall_score, verdict: data.result?.fit_verdict })
-
-      // Supabase에 결과 저장
-      const { data: saved, error: saveError } = await supabase
-        .from('analyses')
-        .insert({ user_id: user.id, jd_text: jdText, result: data.result })
-        .select('id')
-        .single()
-
-      if (saveError || !saved) {
-        localStorage.setItem('fitfolio_result', JSON.stringify(data.result))
-        navigate('/report')
-      } else {
-        navigate(`/report?id=${saved.id}`)
+      if (!res.ok) {
+        await supabase.storage.from('portfolios').remove([storagePath])
+        throw new Error(data.error ?? '분석 시작에 실패했습니다.')
       }
-    } catch (err) {
-      // 크레딧 환불 + Storage 정리
-      await supabase.rpc('refund_credits', { amount: 10 })
+
       await refetchCredits()
-      await supabase.storage.from('portfolios').remove([storagePath])
+      navigate(`/report?id=${data.id}`)
+    } catch (err) {
       const errMsg = err instanceof Error ? err.message : '분석에 실패했습니다. 다시 시도해주세요.'
       Analytics.analysisFailed({ error: errMsg })
       setAnalyzeError(errMsg)

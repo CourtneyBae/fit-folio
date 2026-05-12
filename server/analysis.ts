@@ -341,26 +341,28 @@ import { tmpdir } from 'os'
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY!)
 
-export async function runAnalysis(
+// PDF → Gemini Files API 업로드 (단계 1)
+export async function uploadPdfToGemini(
   pdfBuffer: Buffer,
-  jdText: string,
-): Promise<AnalysisResult> {
+): Promise<{ fileUri: string; fileName: string }> {
   const tmpPath = join(tmpdir(), `portfolio-${Date.now()}.pdf`)
   await writeFile(tmpPath, pdfBuffer)
-
-  let fileUri: string
-  let fileName: string
   try {
     const upload = await fileManager.uploadFile(tmpPath, {
       mimeType: 'application/pdf',
       displayName: 'portfolio.pdf',
     })
-    fileUri = upload.file.uri
-    fileName = upload.file.name
+    return { fileUri: upload.file.uri, fileName: upload.file.name }
   } finally {
     await unlink(tmpPath).catch(() => {})
   }
+}
 
+// Gemini 추론 (단계 2)
+export async function generateAnalysis(
+  fileUri: string,
+  jdText: string,
+): Promise<AnalysisResult> {
   const S = SchemaType
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash',
@@ -482,13 +484,19 @@ export async function runAnalysis(
 ---채용공고---
 ${jdText}`
 
+  const response = await model.generateContent([
+    { fileData: { mimeType: 'application/pdf', fileUri } },
+    { text: userPrompt },
+  ])
+  const text = response.response.text()
+  return JSON.parse(text) as AnalysisResult
+}
+
+// 단일 호출용 (로컬 개발, Express 서버)
+export async function runAnalysis(pdfBuffer: Buffer, jdText: string): Promise<AnalysisResult> {
+  const { fileUri, fileName } = await uploadPdfToGemini(pdfBuffer)
   try {
-    const response = await model.generateContent([
-      { fileData: { mimeType: 'application/pdf', fileUri } },
-      { text: userPrompt },
-    ])
-    const text = response.response.text()
-    return JSON.parse(text) as AnalysisResult
+    return await generateAnalysis(fileUri, jdText)
   } finally {
     await fileManager.deleteFile(fileName).catch(() => {})
   }

@@ -187,7 +187,7 @@ const LOADING_STEPS = [
   '수정 액션 생성 중',
 ]
 
-function LoadingState() {
+function LoadingState({ message }: { message: string }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -196,8 +196,9 @@ function LoadingState() {
   }, [])
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
       <div className="w-6 h-6 border-2 border-[#111110] border-t-transparent rounded-full animate-spin" />
+      <p className="text-[#111110] text-sm font-medium">{message}</p>
       <AnimatePresence mode="wait">
         <motion.p
           key={step}
@@ -205,7 +206,7 @@ function LoadingState() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.3 }}
-          className="text-[#78776c] text-sm"
+          className="text-[#78776c] text-xs"
         >
           {LOADING_STEPS[step]}
         </motion.p>
@@ -733,20 +734,71 @@ export default function Report() {
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading')
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [loadingMsg, setLoadingMsg] = useState('분석 준비 중...')
+
+  const runAnalysis = async (id: string) => {
+    setLoadingMsg('AI 분석 중... (최대 60초)')
+    try {
+      const res = await fetch('/api/analyses-run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (res.ok && data.status === 'done') {
+        Analytics.analysisCompleted({ score: data.result?.overall_score, verdict: data.result?.fit_verdict })
+        setResult(data.result as AnalysisResult)
+        setStatus('done')
+      } else {
+        setStatus('error')
+      }
+    } catch {
+      // 504 타임아웃 → Supabase 폴링으로 전환
+      startPolling(id)
+    }
+  }
+
+  const startPolling = (id: string) => {
+    setLoadingMsg('분석 처리 중입니다...')
+    let attempts = 0
+    const interval = setInterval(async () => {
+      attempts++
+      const { data } = await supabase
+        .from('analyses').select('status, result').eq('id', id).single()
+
+      if (data?.status === 'done' && data.result) {
+        clearInterval(interval)
+        Analytics.analysisCompleted({ score: (data.result as AnalysisResult)?.overall_score, verdict: (data.result as AnalysisResult)?.fit_verdict })
+        setResult(data.result as AnalysisResult)
+        setStatus('done')
+      } else if (data?.status === 'error') {
+        clearInterval(interval)
+        setStatus('error')
+      } else if (attempts % 3 === 0 && (data?.status === 'pending' || data?.status === 'uploaded')) {
+        // 15초마다 재시도
+        runAnalysis(id)
+        clearInterval(interval)
+      } else if (attempts > 24) {
+        clearInterval(interval)
+        setStatus('error')
+      }
+    }, 5000)
+  }
 
   useEffect(() => {
     const id = searchParams.get('id')
 
     if (id) {
-      supabase
-        .from('analyses')
-        .select('result')
-        .eq('id', id)
-        .single()
-        .then(({ data, error }) => {
-          if (error || !data) { setStatus('error'); return }
-          setResult(data.result as AnalysisResult)
-          setStatus('done')
+      supabase.from('analyses').select('status, result').eq('id', id).single()
+        .then(({ data }) => {
+          if (data?.status === 'done' && data.result) {
+            setResult(data.result as AnalysisResult)
+            setStatus('done')
+          } else if (data?.status === 'error') {
+            setStatus('error')
+          } else {
+            runAnalysis(id)
+          }
         })
     } else {
       const stored = localStorage.getItem('fitfolio_result')
@@ -768,7 +820,7 @@ export default function Report() {
           <AnimatePresence mode="wait">
             {status === 'loading' ? (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                <LoadingState />
+                <LoadingState message={loadingMsg} />
               </motion.div>
             ) : status === 'error' || !result ? (
               <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
