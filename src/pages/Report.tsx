@@ -737,23 +737,33 @@ export default function Report() {
   const [loadingMsg, setLoadingMsg] = useState('분석 준비 중...')
 
   const runAnalysis = async (id: string) => {
-    setLoadingMsg('AI 분석 중... (최대 60초)')
+    setLoadingMsg('AI 분석 중...')
     try {
       const res = await fetch('/api/analyses-run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       })
+
+      if (res.status === 504 || res.status === 408) {
+        // 타임아웃 → 로딩 유지하며 폴링으로 전환
+        startPolling(id)
+        return
+      }
+
       const data = await res.json()
       if (res.ok && data.status === 'done') {
         Analytics.analysisCompleted({ score: data.result?.overall_score, verdict: data.result?.fit_verdict })
         setResult(data.result as AnalysisResult)
         setStatus('done')
+      } else if (res.status === 500) {
+        // 서버 에러도 일단 폴링으로 전환 (분석이 백그라운드에서 완료될 수 있음)
+        startPolling(id)
       } else {
         setStatus('error')
       }
     } catch {
-      // 504 타임아웃 → Supabase 폴링으로 전환
+      // 네트워크 에러 → 폴링으로 전환
       startPolling(id)
     }
   }
@@ -774,11 +784,12 @@ export default function Report() {
       } else if (data?.status === 'error') {
         clearInterval(interval)
         setStatus('error')
-      } else if (attempts % 3 === 0 && (data?.status === 'pending' || data?.status === 'uploaded')) {
-        // 15초마다 재시도
-        runAnalysis(id)
+      } else if (attempts % 3 === 0) {
+        // 15초마다 재시도 (로딩 화면 유지)
         clearInterval(interval)
-      } else if (attempts > 24) {
+        runAnalysis(id)
+      } else if (attempts > 36) {
+        // 3분 초과 시 에러
         clearInterval(interval)
         setStatus('error')
       }
