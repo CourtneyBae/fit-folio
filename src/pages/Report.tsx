@@ -180,37 +180,88 @@ function ReportNav() {
 
 // ─── Loading ──────────────────────────────────────────────────────────────────
 
-const LOADING_STEPS = [
-  '포트폴리오 텍스트 추출 중',
-  'JD 요구 역량 분석 중',
-  '데이터 기반 역량 비교 중',
-  '수정 액션 생성 중',
+const PROGRESS_STEPS = [
+  { label: '포트폴리오 업로드 완료', duration: 0 },
+  { label: 'JD 요구 역량 분석 중', duration: 6000 },
+  { label: '강점과 연결 포인트 탐색 중', duration: 28000 },
+  { label: '리포트 생성 중', duration: 52000 },
 ]
 
-function LoadingState({ message }: { message: string }) {
-  const [step, setStep] = useState(0)
+const ANTICIPATION_MESSAGES = [
+  '포트폴리오의 강점을 찾고 있어요',
+  'JD와의 연결 포인트를 분석하고 있어요',
+  '채용담당자 시선으로 검토하고 있어요',
+  '프로젝트별 JD 매치 점수를 계산하고 있어요',
+  '수정하면 임팩트 있는 부분을 정리하는 중이에요',
+  '세 가지 시선으로 포트폴리오를 읽고 있어요',
+]
+
+function LoadingState({ message: _ }: { message: string }) {
+  const [activeStep, setActiveStep] = useState(0)
+  const [msgIdx, setMsgIdx] = useState(0)
 
   useEffect(() => {
-    const id = setInterval(() => setStep((s) => (s + 1) % LOADING_STEPS.length), 1400)
+    const timers = PROGRESS_STEPS.slice(1).map((step, i) =>
+      setTimeout(() => setActiveStep(i + 1), step.duration)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
+  useEffect(() => {
+    const id = setInterval(() => setMsgIdx((s) => (s + 1) % ANTICIPATION_MESSAGES.length), 4000)
     return () => clearInterval(id)
   }, [])
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-      <div className="w-6 h-6 border-2 border-[#111110] border-t-transparent rounded-full animate-spin" />
-      <p className="text-[#111110] text-sm font-medium">{message}</p>
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={step}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.3 }}
-          className="text-[#78776c] text-xs"
-        >
-          {LOADING_STEPS[step]}
-        </motion.p>
-      </AnimatePresence>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center">
+      <div className="w-full max-w-sm">
+        {/* 단계 표시 */}
+        <div className="space-y-4 mb-10">
+          {PROGRESS_STEPS.map((step, i) => {
+            const isDone = i < activeStep
+            const isActive = i === activeStep
+            return (
+              <div key={step.label} className="flex items-center gap-3">
+                <div className={cn(
+                  'w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500',
+                  isDone ? 'bg-[#111110]' : isActive ? 'border-2 border-[#111110]' : 'border-2 border-[#e4e4e0]',
+                )}>
+                  {isDone && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                  {isActive && (
+                    <div className="w-2 h-2 rounded-full bg-[#111110] animate-pulse" />
+                  )}
+                </div>
+                <span className={cn(
+                  'text-sm transition-colors duration-500',
+                  isDone ? 'text-[#78776c] line-through' : isActive ? 'text-[#111110] font-medium' : 'text-[#a8a89e]',
+                )}>
+                  {step.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 기대 메시지 */}
+        <div className="border-t border-[#e4e4e0] pt-6">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={msgIdx}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.4 }}
+              className="text-[#78776c] text-sm text-center leading-relaxed"
+            >
+              {ANTICIPATION_MESSAGES[msgIdx]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   )
 }
