@@ -10,7 +10,8 @@ import { supabase } from '@/lib/supabase'
 interface AnalysisSummary {
   id: string
   jd_text: string
-  result: { overall_score: number; fit_verdict: string; overall_summary: string }
+  result: { overall_score: number; fit_verdict: string; overall_summary: string } | null
+  status: string | null
   created_at: string
 }
 
@@ -56,7 +57,7 @@ export default function MyPage() {
     if (!user) return
     supabase
       .from('analyses')
-      .select('id, jd_text, result, created_at')
+      .select('id, jd_text, result, status, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -152,18 +153,26 @@ export default function MyPage() {
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold text-[#111110]">{a.result.overall_score}</span>
-                          <span className="text-[#78776c] text-xs">/100</span>
-                        </div>
-                        <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-medium', verdictClass(a.result.fit_verdict))}>
-                          {verdictLabel(a.result.fit_verdict)}
-                        </span>
+                        {a.result ? (
+                          <>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-2xl font-bold text-[#111110]">{a.result.overall_score}</span>
+                              <span className="text-[#78776c] text-xs">/100</span>
+                            </div>
+                            <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-medium', verdictClass(a.result.fit_verdict))}>
+                              {verdictLabel(a.result.fit_verdict)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#f4f4f4] text-[#78776c]">
+                            {a.status === 'error' ? '분석 실패' : '처리 중'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center justify-end mt-3">
                       <span className="text-[#78776c] text-xs group-hover:text-[#111110] transition-colors flex items-center gap-1">
-                        결과 보기 <ArrowRight size={11} />
+                        {a.result ? '결과 보기' : '계속하기'} <ArrowRight size={11} />
                       </span>
                     </div>
                   </motion.button>
