@@ -4,6 +4,23 @@ import { uploadPdfToGemini, generateAnalysis } from '../server/analysis.js'
 
 export const maxDuration = 60
 
+function isOverloadError(err: unknown): boolean {
+  if (!err) return false
+  const e = err as Record<string, unknown>
+  const status = Number(e.status ?? e.statusCode ?? e.httpStatus ?? 0)
+  if (status === 503 || status === 429) return true
+  const msg = String(e.message ?? '')
+  return (
+    msg.includes('503') ||
+    msg.includes('Service Unavailable') ||
+    msg.includes('high demand') ||
+    msg.includes('overloaded') ||
+    msg.includes('429') ||
+    msg.includes('Too Many Requests') ||
+    msg.includes('RESOURCE_EXHAUSTED')
+  )
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -29,12 +46,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (record.status === 'error') {
-    // 재시도 허용: pending으로 리셋 (크레딧은 이미 환불됐으므로 재차감 없음)
+    // 재시도 허용: pending으로 리셋
     await supabase.from('analyses').update({ status: 'pending' }).eq('id', id)
   }
 
   try {
-    // PDF → Gemini 업로드 (이전 시도에서 완료됐으면 스킵 — 재시도 안전)
+    // PDF → Gemini 업로드 (이전 시도에서 완료됐으면 스킵)
     let fileUri: string = record.gemini_file_uri
     let fileName: string = record.gemini_file_name
 
@@ -48,27 +65,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fileUri = uploaded.fileUri
       fileName = uploaded.fileName
 
-      // fileUri 저장 → 다음 재시도 시 업로드 단계 스킵
       await supabase.from('analyses')
         .update({ gemini_file_uri: fileUri, gemini_file_name: fileName })
         .eq('id', id)
     }
 
-    // Gemini 추론 (503 과부하 시 최대 3회 재시도)
+    // Gemini 추론
     let result
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        result = await generateAnalysis(fileUri, record.jd_text)
-        break
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : ''
-        const isTransient = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded')
-        if (isTransient && attempt < 2) {
-          await new Promise(r => setTimeout(r, 4000 * (attempt + 1)))
-          continue
-        }
-        throw err
+    try {
+      result = await generateAnalysis(fileUri, record.jd_text)
+    } catch (geminiErr) {
+      const overload = isOverloadError(geminiErr)
+      const geminiMsg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr)
+      const geminiStatus = (geminiErr as Record<string, unknown>)?.status ?? 'none'
+      console.error('[analyses-run] Gemini error | overload:', overload, '| status:', geminiStatus, '| msg:', geminiMsg)
+
+      if (overload) {
+        // 과부하: status=pending 유지 → 클라이언트 폴링이 재시도
+        return res.status(503).json({ error: '분석 서버가 일시적으로 과부하 상태입니다.' })
       }
+      throw geminiErr
     }
 
     // 결과 저장
@@ -87,17 +103,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.json({ status: 'done', result })
   } catch (err) {
     const msg = err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.'
-    console.error('[analyses-run]', msg)
+    console.error('[analyses-run] fatal error:', msg)
 
-    const isTransient = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded')
-
-    if (isTransient) {
-      // 임시 오류: status를 pending 유지 → 클라이언트 폴링이 재시도
-      return res.status(503).json({ error: msg })
-    }
-
-    // 영구 오류: error로 마킹 + 크레딧 환불
     await supabase.from('analyses').update({ status: 'error' }).eq('id', id)
+
     const { data: profile } = await supabase
       .from('profiles').select('credits').eq('id', record.user_id).single()
     if (profile) {
