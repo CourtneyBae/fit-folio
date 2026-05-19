@@ -802,6 +802,7 @@ export default function Report() {
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading')
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [loadingMsg, setLoadingMsg] = useState('분석 준비 중...')
+  const [retryCount, setRetryCount] = useState(0)
 
   const runAnalysis = async (id: string) => {
     setLoadingMsg('AI 분석 중...')
@@ -910,13 +911,17 @@ export default function Report() {
                   AI 서버가 일시적으로 불안정할 수 있어요.<br />잠시 후 다시 시도해보세요.
                 </p>
                 <div className="flex items-center gap-3 mt-2">
-                  <button
-                    onClick={() => { const id = searchParams.get('id'); if (id) { setStatus('loading'); runAnalysis(id) } }}
-                    className="inline-flex items-center gap-2 bg-[#111110] text-[#f4f4f0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#2a2a28] transition-colors"
-                  >
-                    다시 시도하기
-                    <ArrowRight size={14} />
-                  </button>
+                  {retryCount < 2 ? (
+                    <button
+                      onClick={() => { const id = searchParams.get('id'); if (id) { setRetryCount(c => c + 1); setStatus('loading'); runAnalysis(id) } }}
+                      className="inline-flex items-center gap-2 bg-[#111110] text-[#f4f4f0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#2a2a28] transition-colors"
+                    >
+                      다시 시도하기
+                      <ArrowRight size={14} />
+                    </button>
+                  ) : (
+                    <p className="text-[#78776c] text-xs">반복 실패 시 크레딧은 자동 환불됩니다.</p>
+                  )}
                   <a href="/analyze" className="text-[#78776c] text-sm hover:text-[#111110] transition-colors underline underline-offset-2">
                     새로 분석하기
                   </a>

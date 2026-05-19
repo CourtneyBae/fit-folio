@@ -29,7 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (record.status === 'error') {
-    return res.status(500).json({ error: '이전 분석이 실패했습니다.' })
+    // 재시도 허용: pending으로 리셋 (크레딧은 이미 환불됐으므로 재차감 없음)
+    await supabase.from('analyses').update({ status: 'pending' }).eq('id', id)
   }
 
   try {
