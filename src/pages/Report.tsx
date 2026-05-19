@@ -813,8 +813,8 @@ export default function Report() {
         body: JSON.stringify({ id }),
       })
 
-      if (res.status === 504 || res.status === 408) {
-        // 타임아웃 → 로딩 유지하며 폴링으로 전환
+      if (res.status === 504 || res.status === 408 || res.status === 503) {
+        // 타임아웃 또는 Gemini 과부하 → 로딩 유지하며 폴링으로 전환
         startPolling(id)
         return
       }
