@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Analytics } from '@/lib/analytics'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, AlertCircle, ArrowRight, ChevronDown, Link2, FileDown } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ArrowRight, ChevronDown, Link2, FileDown, Palette, Briefcase, MessageSquare, Info, type LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
@@ -284,15 +284,27 @@ function SummarySection({ result }: { result: AnalysisResult }) {
       <motion.div variants={staggerItem} className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-8">
         {/* Left: score + verdict */}
         <div>
-          <div className="flex items-baseline gap-2 mb-4">
+          <div className="flex items-end gap-2 mb-4">
             <span className="text-8xl font-bold text-[#111110] leading-none tracking-tight">
               {result.overall_score}
             </span>
-            <span className="text-2xl text-[#78776c]">/100</span>
+            <div className="pb-2">
+              <span className="text-2xl text-[#78776c]">/100</span>
+            </div>
           </div>
-          <span className={cn('rounded-full px-4 py-1.5 text-sm font-medium', verdict.className)}>
-            {verdict.label}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className={cn('rounded-full px-4 py-1.5 text-sm font-medium', verdict.className)}>
+              {verdict.label}
+            </span>
+            <div className="group relative">
+              <Info size={14} className="text-[#a8a89e] cursor-help" />
+              <div className="absolute left-6 top-0 z-10 hidden group-hover:block w-64 bg-[#111110] text-[#f4f4f0] rounded-xl p-3 text-xs leading-relaxed shadow-lg">
+                <p className="font-medium mb-1">점수 기준</p>
+                <p className="text-[#a8a89e]">70+ 강한 적합 · 50–69 잠재 적합 · 50 미만 보완 필요</p>
+                <p className="text-[#a8a89e] mt-1">JD 필수·우대 역량과의 일치도, 프로젝트 적합성, 성과 표현 등을 종합해 산출됩니다.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right: summary */}
@@ -388,10 +400,10 @@ function JdSkillsSection({ result }: { result: AnalysisResult }) {
 
 type PersonaTab = 'senior_designer' | 'hiring_manager' | 'interviewer'
 
-const PERSONA_TABS: { id: PersonaTab; label: string }[] = [
-  { id: 'senior_designer', label: '시니어 디자이너' },
-  { id: 'hiring_manager',  label: '채용 담당자' },
-  { id: 'interviewer',     label: '면접관' },
+const PERSONA_TABS: { id: PersonaTab; label: string; icon: LucideIcon }[] = [
+  { id: 'senior_designer', label: '시니어 디자이너', icon: Palette },
+  { id: 'hiring_manager',  label: '채용 담당자',      icon: Briefcase },
+  { id: 'interviewer',     label: '면접관',           icon: MessageSquare },
 ]
 
 function PersonaReviewSection({ result }: { result: AnalysisResult }) {
@@ -407,20 +419,24 @@ function PersonaReviewSection({ result }: { result: AnalysisResult }) {
 
         {/* Tab buttons */}
         <motion.div variants={staggerItem} className="flex gap-2 mb-6 flex-wrap">
-          {PERSONA_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActive(tab.id)}
-              className={cn(
-                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                active === tab.id
-                  ? 'bg-[#111110] text-[#f4f4f0]'
-                  : 'border border-[#e4e4e0] text-[#78776c] hover:text-[#111110] hover:border-[#111110]',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {PERSONA_TABS.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActive(tab.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                  active === tab.id
+                    ? 'bg-[#111110] text-[#f4f4f0]'
+                    : 'border border-[#e4e4e0] text-[#78776c] hover:text-[#111110] hover:border-[#111110]',
+                )}
+              >
+                <Icon size={13} />
+                {tab.label}
+              </button>
+            )
+          })}
         </motion.div>
 
         {/* Content */}
@@ -614,7 +630,7 @@ function SkillAnalysisSection({ result }: { result: AnalysisResult }) {
 
       <motion.div
         variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-        className="grid grid-cols-1 gap-4"
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {sorted.map((skill) => (
           <motion.div key={skill.skill} variants={staggerItem}>
@@ -885,11 +901,26 @@ export default function Report() {
                 <LoadingState message={loadingMsg} />
               </motion.div>
             ) : status === 'error' || !result ? (
-              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-                <p className="text-[#111110] text-lg font-semibold">결과를 불러올 수 없습니다</p>
-                <a href="/analyze" className="text-[#78776c] text-sm hover:text-[#111110] transition-colors underline underline-offset-2">
-                  다시 분석하기
-                </a>
+              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#fee2e2] flex items-center justify-center mb-2">
+                  <AlertCircle size={20} className="text-[#dc2626]" />
+                </div>
+                <p className="text-[#111110] text-lg font-semibold">분석 중 오류가 발생했습니다</p>
+                <p className="text-[#78776c] text-sm text-center max-w-xs leading-relaxed">
+                  AI 서버가 일시적으로 불안정할 수 있어요.<br />잠시 후 다시 시도해보세요.
+                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={() => { const id = searchParams.get('id'); if (id) { setStatus('loading'); runAnalysis(id) } }}
+                    className="inline-flex items-center gap-2 bg-[#111110] text-[#f4f4f0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#2a2a28] transition-colors"
+                  >
+                    다시 시도하기
+                    <ArrowRight size={14} />
+                  </button>
+                  <a href="/analyze" className="text-[#78776c] text-sm hover:text-[#111110] transition-colors underline underline-offset-2">
+                    새로 분석하기
+                  </a>
+                </div>
               </motion.div>
             ) : (
               <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>

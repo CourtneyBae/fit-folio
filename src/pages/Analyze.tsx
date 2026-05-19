@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Upload, X, FileText, AlertCircle, ArrowRight } from 'lucide-react'
+import { Upload, X, FileText, AlertCircle, ArrowRight, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SiteNav from '@/components/SiteNav'
 import ProModal from '@/components/ProModal'
@@ -381,9 +381,17 @@ export default function Analyze() {
           </motion.div>
 
           {/* ── 개인정보 캡션 ── */}
-          <p className="mt-16 text-center text-[#78776c] text-xs leading-relaxed">
-            업로드된 파일은 분석 목적으로만 사용되며, 분석 완료 후 서버에서 삭제됩니다.
-          </p>
+          <div className="mt-16 flex flex-col items-center gap-2">
+            <div className="flex items-center gap-1.5 text-[#78776c]">
+              <Lock size={12} />
+              <p className="text-xs font-medium">보안 처리</p>
+            </div>
+            <p className="text-center text-[#a8a89e] text-xs leading-relaxed max-w-sm">
+              업로드된 파일은 분석 목적으로만 사용됩니다.<br />
+              분석 완료 후 서버와 AI 모델에서 즉시 삭제되며,<br />
+              제3자와 공유되지 않습니다.
+            </p>
+          </div>
         </div>
       </main>
     </div>
