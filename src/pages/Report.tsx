@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Analytics } from '@/lib/analytics'
@@ -803,8 +803,25 @@ export default function Report() {
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [loadingMsg, setLoadingMsg] = useState('분석 준비 중...')
   const [retryCount, setRetryCount] = useState(0)
+  const totalAttemptsRef = useRef(0)   // runAnalysis 총 호출 횟수 (리셋 방지)
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+  }
 
   const runAnalysis = async (id: string) => {
+    totalAttemptsRef.current++
+    // 최대 5회 시도 후 에러 처리
+    if (totalAttemptsRef.current > 5) {
+      stopPolling()
+      setStatus('error')
+      return
+    }
+
     setLoadingMsg('AI 분석 중...')
     try {
       const res = await fetch('/api/analyses-run', {
@@ -814,7 +831,6 @@ export default function Report() {
       })
 
       if (res.status === 504 || res.status === 408 || res.status === 503) {
-        // 타임아웃 또는 Gemini 과부하 → 로딩 유지하며 폴링으로 전환
         startPolling(id)
         return
       }
@@ -824,42 +840,35 @@ export default function Report() {
         Analytics.analysisCompleted({ score: data.result?.overall_score, verdict: data.result?.fit_verdict })
         setResult(data.result as AnalysisResult)
         setStatus('done')
-      } else if (res.status === 500) {
-        // 서버 에러도 일단 폴링으로 전환 (분석이 백그라운드에서 완료될 수 있음)
-        startPolling(id)
       } else {
-        setStatus('error')
+        startPolling(id)
       }
     } catch {
-      // 네트워크 에러 → 폴링으로 전환
       startPolling(id)
     }
   }
 
   const startPolling = (id: string) => {
+    stopPolling()  // 중복 인터벌 방지
     setLoadingMsg('분석 처리 중입니다...')
-    let attempts = 0
-    const interval = setInterval(async () => {
-      attempts++
+    let pollCount = 0
+    pollingIntervalRef.current = setInterval(async () => {
+      pollCount++
       const { data } = await supabase
         .from('analyses').select('status, result').eq('id', id).single()
 
       if (data?.status === 'done' && data.result) {
-        clearInterval(interval)
+        stopPolling()
         Analytics.analysisCompleted({ score: (data.result as AnalysisResult)?.overall_score, verdict: (data.result as AnalysisResult)?.fit_verdict })
         setResult(data.result as AnalysisResult)
         setStatus('done')
       } else if (data?.status === 'error') {
-        clearInterval(interval)
+        stopPolling()
         setStatus('error')
-      } else if (attempts % 3 === 0) {
-        // 15초마다 재시도 (로딩 화면 유지)
-        clearInterval(interval)
+      } else if (pollCount % 3 === 0) {
+        // 15초마다 서버 재시도 (totalAttemptsRef로 상한 관리)
+        stopPolling()
         runAnalysis(id)
-      } else if (attempts > 36) {
-        // 3분 초과 시 에러
-        clearInterval(interval)
-        setStatus('error')
       }
     }, 5000)
   }
@@ -913,7 +922,7 @@ export default function Report() {
                 <div className="flex items-center gap-3 mt-2">
                   {retryCount < 2 ? (
                     <button
-                      onClick={() => { const id = searchParams.get('id'); if (id) { setRetryCount(c => c + 1); setStatus('loading'); runAnalysis(id) } }}
+                      onClick={() => { const id = searchParams.get('id'); if (id) { setRetryCount(c => c + 1); totalAttemptsRef.current = 0; setStatus('loading'); runAnalysis(id) } }}
                       className="inline-flex items-center gap-2 bg-[#111110] text-[#f4f4f0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#2a2a28] transition-colors"
                     >
                       다시 시도하기
